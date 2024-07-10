@@ -1,0 +1,72 @@
+/* Centering the container vertically */
+.interviwee-login-container {
+    height: 100vh;
+    /* background: linear-gradient(135deg, #6e8efb, #a777e3); */
+    
+  }
+.fef{
+    font-size: 2.5rem; 
+    font-weight: bold;
+    text-align: center;
+    color: #1560BD; /* Adjust color */
+    /* text-transform: uppercase; */
+    letter-spacing: 2px;
+    margin-bottom: 20px; /* Adjust spacing */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Optional: Add a subtle text shadow */
+}
+  
+  .card-title {
+    font-size: 1.8rem;
+    color: #444;
+    font-weight: 600;
+  }
+  
+  .input-field {
+    border-radius: 0.25rem;
+    border: 2px solid #ccc;
+    transition: border-color 0.3s ease;
+  }
+  
+  .input-field:focus {
+    border-color: #6e8efb;
+    box-shadow: 0 0 0 0.2rem rgba(110, 142, 251, 0.25);
+  }
+  
+  .btn-custom {
+    background: #6e8efb;
+    border: none;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn-custom:hover {
+    background: #5a73e5;
+  }
+  
+  .btn-success {
+    background: #28a745;
+  }
+  
+  .btn-success:hover {
+    background: #218838;
+  }
+  
+  .card {
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  
+  .card-body {
+    padding: 2rem;
+  }
+  
+  @media (max-width: 768px) {
+    .card-title {
+      font-size: 1.5rem;
+    }
+  
+    .input-field {
+      font-size: 1rem;
+    }
+  }
+  
