@@ -6,25 +6,21 @@ const StartPage = () => {
   const location = useLocation();
   const { languages } = location.state || { languages: [] };
   const [questions, setQuestions] = useState([]);
-  const [conversations, setConversations] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
   const [userInput, setUserInput] = useState("");
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(0);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const response = await axios.post("http://localhost:5000/questions", { languages });
-        const selectedQuestions = response.data.sort(() => 0.5 - Math.random()).slice(0, 5); // Select 2 random questions
+        const selectedQuestions = response.data.sort(() => 0.5 - Math.random()).slice(0, 5); // Select 5 random questions
         setQuestions(selectedQuestions);
-
-        // Initialize the conversation with the first question
-        setConversations([
-          { text: "Let's start with your first question!", sender: "system" },
-        ]);
+        setCurrentQuestion(selectedQuestions[0]);
       } catch (error) {
         console.error("Error fetching questions:", error);
         setError("Failed to load questions. Please try again.");
@@ -38,63 +34,27 @@ const StartPage = () => {
     }
   }, [languages]);
 
-  useEffect(() => {
-    if (questions.length > 0 && currentQuestionIndex === 0) {
-      // Add the first question to the conversation
-      setConversations((prevConversations) => [
-        ...prevConversations,
-        { text: questions[0].question, sender: "system" },
-      ]);
-    }
-  }, [questions, currentQuestionIndex]);
-
   const handleUserInput = async () => {
     if (!userInput.trim()) return;
 
-    const currentQuestion = questions[currentQuestionIndex];
-    const userResponse = { text: userInput, sender: "user" };
-
-    setConversations((prevConversations) => [
-      ...prevConversations,
-      userResponse,
-    ]);
-    setUserInput("");
+    const currentQuestionText = currentQuestion.question;
 
     try {
-      // Send the question and user answer to the backend for evaluation
       const response = await axios.post("http://localhost:5000/evaluate-answer", {
-        question: currentQuestion.question,
+        question: currentQuestionText,
         userAnswer: userInput,
       });
 
       const { feedback } = response.data;
-      const systemResponse = {
-        text: feedback.feedback,
-        sender: "system",
-      };
 
-      // Append system feedback to the conversation history
-      setConversations((prevConversations) => [
-        ...prevConversations,
-        systemResponse,
-      ]);
-
-      // Update the score
       setScore((prevScore) => prevScore + feedback.score);
 
-      // Move to the next question or finish the quiz
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-        setConversations((prevConversations) => [
-          ...prevConversations,
-          { text: questions[currentQuestionIndex + 1].question, sender: "system" },
-        ]);
+      if (questionIndex < questions.length - 1) {
+        setQuestionIndex((prevIndex) => prevIndex + 1);
+        setCurrentQuestion(questions[questionIndex + 1]);
+        setUserInput(""); // Clear the input field
       } else {
         setIsFinished(true);
-        setConversations((prevConversations) => [
-          ...prevConversations,
-          { text: `Quiz Finished! Your score: ${score + feedback.score} / ${questions.length}`, sender: "system" },
-        ]);
       }
     } catch (error) {
       console.error("Error evaluating answer:", error);
@@ -106,78 +66,117 @@ const StartPage = () => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="conversation-container">
-      <h2>Interview Chat</h2>
-      <p>Score: {score}</p>
-      <div className="conversation-box">
-        {conversations.map((conv, index) => (
-          <div key={index} className={`message ${conv.sender}`}>
-            <p>{conv.text}</p>
+    <div className="page-container">
+      <header className="header">
+        <h1>Interview Quiz</h1>
+        <p className="score">Score: {score}</p>
+      </header>
+      <main className="main-content">
+        {isFinished ? (
+          <div className="result">
+            <h2>Quiz Finished!</h2>
+            <p>Your score: {score} / {questions.length}</p>
           </div>
-        ))}
-      </div>
-
-      {!isFinished && (
-        <div className="input-area">
-          <input
-            type="text"
-            placeholder="Type your answer here..."
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleUserInput()}
-          />
-          <button onClick={handleUserInput} className="send-button">
-            Send
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="question-section">
+            {currentQuestion && (
+              <>
+                <p className="question">{currentQuestion.question}</p>
+                <div className="input-area">
+                  <input
+                    type="text"
+                    placeholder="Type your answer here..."
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleUserInput()}
+                  />
+                  <button onClick={handleUserInput} className="send-button">
+                    Submit
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </main>
+      <footer className="footer">
+        <p>Powered by React</p>
+      </footer>
 
       <style jsx>{`
-        .conversation-container {
+        .page-container {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          font-family: Arial, sans-serif;
+        }
+        .header {
+          background-color: #4a90e2;
+          color: white;
           padding: 20px;
+          text-align: center;
         }
-        .conversation-box {
-          background: #f9f9f9;
-          padding: 15px;
-          margin-bottom: 10px;
-          border-radius: 5px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          max-height: 400px;
-          overflow-y: auto;
+        .score {
+          font-size: 18px;
+          margin: 0;
         }
-        .message {
-          margin-bottom: 10px;
-          padding: 10px;
-          border-radius: 5px;
+        .main-content {
+          flex: 1;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
-        .message.system {
-          background-color: #d1e7dd;
-          align-self: flex-start;
+        .question-section {
+          background: #ffffff;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          max-width: 600px;
+          width: 100%;
+          text-align: center;
         }
-        .message.user {
-          background-color: #e2e3e5;
-          align-self: flex-end;
+        .question {
+          font-size: 20px;
+          margin-bottom: 20px;
+          font-weight: bold;
         }
         .input-area {
           display: flex;
+          justify-content: center;
+          gap: 10px;
         }
         input[type="text"] {
           flex: 1;
           padding: 10px;
-          border: 1px solid #ccc;
+          border: 1px solid #ddd;
           border-radius: 5px;
-          margin-right: 10px;
+          font-size: 16px;
         }
         .send-button {
-          background-color: #3d52a0;
-          color: #fff;
+          background-color: #4a90e2;
+          color: white;
           padding: 10px 20px;
           border: none;
           border-radius: 5px;
           cursor: pointer;
+          font-size: 16px;
         }
         .send-button:hover {
-          background-color: #2c3e75;
+          background-color: #357abd;
+        }
+        .result {
+          background: #f8f8f8;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .footer {
+          background-color: #4a90e2;
+          color: white;
+          text-align: center;
+          padding: 10px;
         }
       `}</style>
     </div>
