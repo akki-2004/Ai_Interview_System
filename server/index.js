@@ -7,6 +7,8 @@ const twilio = require('twilio');
 const moment = require('moment');
 // const bcrypt = require('bcryptjs');
 require('dotenv').config();
+const { generateGroqResponse, evaluateAnswerWithGroq } = require('./groqService');
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -118,6 +120,28 @@ app.post('/questions', async (req, res) => {
   } catch (error) {
     console.error('Error fetching questions:', error);
     res.status(500).send('Server error');
+  }
+});
+
+
+app.get('/groq-response', async (req, res) => {
+  try {
+    const response = await generateGroqResponse();
+    res.status(200).json({ response });
+  } catch (error) {
+    console.error('Error generating Groq response:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/evaluate-answer', async (req, res) => {
+  try {
+    const { question, userAnswer } = req.body;
+    const feedback = await evaluateAnswerWithGroq(question, userAnswer);
+    res.status(200).json({ feedback });
+  } catch (error) {
+    console.error('Error evaluating answer:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

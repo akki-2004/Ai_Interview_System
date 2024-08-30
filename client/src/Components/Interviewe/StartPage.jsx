@@ -6,18 +6,25 @@ const StartPage = () => {
   const location = useLocation();
   const { languages } = location.state || { languages: [] };
   const [questions, setQuestions] = useState([]);
-  const [userAnswers, setUserAnswers] = useState({});
+  const [conversations, setConversations] = useState([]);
+  const [userInput, setUserInput] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [score, setScore] = useState(null);
+  const [score, setScore] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const response = await axios.post("http://localhost:5000/questions", { languages });
-        const selectedQuestions = response.data.sort(() => 0.5 - Math.random()).slice(0, 5); // Select 5 random questions
+        const selectedQuestions = response.data.sort(() => 0.5 - Math.random()).slice(0, 5); // Select 2 random questions
         setQuestions(selectedQuestions);
+
+        // Initialize the conversation with the first question
+        setConversations([
+          { text: "Let's start with your first question!", sender: "system" },
+        ]);
       } catch (error) {
         console.error("Error fetching questions:", error);
         setError("Failed to load questions. Please try again.");
@@ -31,84 +38,145 @@ const StartPage = () => {
     }
   }, [languages]);
 
-  const handleAnswerChange = (e) => {
-    setUserAnswers({ ...userAnswers, [currentQuestionIndex]: e.target.value });
-  };
-
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      // All questions answered, calculate score
-      calculateScore();
+  useEffect(() => {
+    if (questions.length > 0 && currentQuestionIndex === 0) {
+      // Add the first question to the conversation
+      setConversations((prevConversations) => [
+        ...prevConversations,
+        { text: questions[0].question, sender: "system" },
+      ]);
     }
-  };
+  }, [questions, currentQuestionIndex]);
 
-  const calculateScore = () => {
-    let totalScore = 0;
-    questions.forEach((question, index) => {
-      if (userAnswers[index] && userAnswers[index].trim().toLowerCase() === question.answer.trim().toLowerCase()) {
-        totalScore += 1;
+  const handleUserInput = async () => {
+    if (!userInput.trim()) return;
+
+    const currentQuestion = questions[currentQuestionIndex];
+    const userResponse = { text: userInput, sender: "user" };
+
+    setConversations((prevConversations) => [
+      ...prevConversations,
+      userResponse,
+    ]);
+    setUserInput("");
+
+    try {
+      // Send the question and user answer to the backend for evaluation
+      const response = await axios.post("http://localhost:5000/evaluate-answer", {
+        question: currentQuestion.question,
+        userAnswer: userInput,
+      });
+
+      const { feedback } = response.data;
+      const systemResponse = {
+        text: feedback.feedback,
+        sender: "system",
+      };
+
+      // Append system feedback to the conversation history
+      setConversations((prevConversations) => [
+        ...prevConversations,
+        systemResponse,
+      ]);
+
+      // Update the score
+      setScore((prevScore) => prevScore + feedback.score);
+
+      // Move to the next question or finish the quiz
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+        setConversations((prevConversations) => [
+          ...prevConversations,
+          { text: questions[currentQuestionIndex + 1].question, sender: "system" },
+        ]);
+      } else {
+        setIsFinished(true);
+        setConversations((prevConversations) => [
+          ...prevConversations,
+          { text: `Quiz Finished! Your score: ${score + feedback.score} / ${questions.length}`, sender: "system" },
+        ]);
       }
-    });
-    setScore(totalScore);
+    } catch (error) {
+      console.error("Error evaluating answer:", error);
+      setError("Failed to evaluate answer. Please try again.");
+    }
   };
 
   if (loading) return <p>Loading questions...</p>;
   if (error) return <p>{error}</p>;
 
-  const currentQuestion = questions[currentQuestionIndex];
-
   return (
-    <div className="questions-container">
-      <h2>Interview Questions</h2>
-      {currentQuestion ? (
-        <div className="question-card">
-          <h3>Question {currentQuestionIndex + 1}: {currentQuestion.question}</h3>
-          <p><strong>Language:</strong> {currentQuestion.programmingLanguage}</p>
+    <div className="conversation-container">
+      <h2>Interview Chat</h2>
+      <p>Score: {score}</p>
+      <div className="conversation-box">
+        {conversations.map((conv, index) => (
+          <div key={index} className={`message ${conv.sender}`}>
+            <p>{conv.text}</p>
+          </div>
+        ))}
+      </div>
+
+      {!isFinished && (
+        <div className="input-area">
           <input
             type="text"
-            placeholder="Your answer"
-            onChange={handleAnswerChange}
-            value={userAnswers[currentQuestionIndex] || ''}
+            placeholder="Type your answer here..."
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleUserInput()}
           />
-          <button onClick={handleNext} className="next-button">
-            {currentQuestionIndex < questions.length - 1 ? 'Next' : 'Submit'}
+          <button onClick={handleUserInput} className="send-button">
+            Send
           </button>
         </div>
-      ) : (
-        <p>No questions available for the selected languages.</p>
       )}
 
-      {score !== null && <p>Your score: {score} / {questions.length}</p>}
-
       <style jsx>{`
-        .questions-container {
+        .conversation-container {
           padding: 20px;
         }
-        .question-card {
+        .conversation-box {
           background: #f9f9f9;
           padding: 15px;
           margin-bottom: 10px;
           border-radius: 5px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          max-height: 400px;
+          overflow-y: auto;
         }
-        h2 {
-          color: #3d52a0;
+        .message {
+          margin-bottom: 10px;
+          padding: 10px;
+          border-radius: 5px;
         }
-        h3 {
-          color: #333;
+        .message.system {
+          background-color: #d1e7dd;
+          align-self: flex-start;
         }
-        .next-button {
+        .message.user {
+          background-color: #e2e3e5;
+          align-self: flex-end;
+        }
+        .input-area {
+          display: flex;
+        }
+        input[type="text"] {
+          flex: 1;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          margin-right: 10px;
+        }
+        .send-button {
           background-color: #3d52a0;
           color: #fff;
           padding: 10px 20px;
           border: none;
           border-radius: 5px;
           cursor: pointer;
-          margin-top: 10px;
         }
-        .next-button:hover {
+        .send-button:hover {
           background-color: #2c3e75;
         }
       `}</style>
