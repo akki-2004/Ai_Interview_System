@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../Layout/Header';
-import { Link } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import StartPage from './StartPage';
 
 const Languages = () => {
   const [latestInterview, setLatestInterview] = useState(null);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchLatestInterview = async () => {
       try {
@@ -15,9 +16,17 @@ const Languages = () => {
         console.error('Error fetching latest interview:', error);
       }
     };
-
+      console.log(latestInterview);
     fetchLatestInterview();
   }, []);
+
+
+  const handleClick = () => {
+    if (latestInterview) {
+      navigate('/interviewe/start', { state: { languages: latestInterview.selectedLanguages } });
+    }
+  };
+  
 
   return (
     <>
@@ -34,9 +43,14 @@ const Languages = () => {
             ))}
           </div>
         </div>
-        <Link to="/interviewe/start">
+         {latestInterview && (
+          <button className="proceed-button" onClick={handleClick}>
+            Start
+          </button>
+        )}
+        {/* <Link to="/interviewe/start">
           <button className="proceed-button">Start</button>
-        </Link>
+        </Link> */}
       </div>
 
       <style jsx>{`

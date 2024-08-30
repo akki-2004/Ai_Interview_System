@@ -25,7 +25,8 @@ const transporter = nodemailer.createTransport({
 });
 
 const accountSid =process.env.TWILIO_ACCOUNT_SID;
-const authToken = 'b38b9c0de79ac54c69325147d054b850';
+// const authToken = 'b38b9c0de79ac54c69325147d054b850';
+const authToken = process.env.TWILIO_ACCOUNT_TOKEN;
 const client = twilio(accountSid, authToken);
 
 mongoose.connect('mongodb+srv://Akshay2:Akshay2@ems.yzofrjh.mongodb.net/interviewDB', {
@@ -72,6 +73,55 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
+
+const interviewQuestionSchema = new mongoose.Schema({
+  id: {
+    type: Number,
+    required: true,
+    unique: true,
+    trim: true,
+  },
+  question: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  answer: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  programmingLanguage: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+ 
+});
+const InterviewQuestion = mongoose.model('InterviewQuestion', interviewQuestionSchema);
+
+app.use(express.json()); // Add this middleware to parse JSON bodies
+
+app.post('/questions', async (req, res) => {
+  const { languages } = req.body; // Get languages from the body
+
+  if (!languages || languages.length === 0) {
+    return res.status(400).send('Please provide at least one language');
+  }
+
+  try {
+    const questions = await InterviewQuestion.find({ programmingLanguage: { $in: languages } });
+    if (questions.length === 0) {
+      return res.status(404).send('No questions found for the specified languages');
+    }
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    res.status(500).send('Server error');
+  }
+});
+
+
 
 app.post('/langselect', async (req, res) => {
   try {
