@@ -209,7 +209,7 @@ export default function HomeC() {
         .div-14 {
           justify-content: center;
           border-radius: 50px;
-          background-color: #000;
+          background-color: #3d52a0;
           align-self: start;
           margin-top: 41px;
           color: #fff;

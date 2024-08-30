@@ -1,338 +1,360 @@
-import * as React from "react";
-import Header from "../Layout/Header";
-import { Link } from "react-router-dom";
-import { Button } from "react-bootstrap";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Header from '../Layout/Header';
+import axios from 'axios';
+import { useLanguage } from './LangContext';
 
-export default function LangSelec() {
-  const [selectedLanguages, setSelectedLanguages] = React.useState({
-    Java: false,
-    Python: false,
-    "C++": false,
-    C: false,
-  });
+const CombinedPage = () => {
+  const { selectedLanguages, setSelectedLanguages } = useLanguage();
+  const [selectedCutoffs, setSelectedCutoffs] = useState({});
+  const [form, setForm] = useState({ date: '', time: '', duration: '', period: 'AM' });
+  const [isSettingsSet, setIsSettingsSet] = useState(false);
+  const navigate = useNavigate();
 
-  const handleCheckboxChange = (language) => {
-    setSelectedLanguages((prevSelectedLanguages) => ({
-      ...prevSelectedLanguages,
-      [language]: !prevSelectedLanguages[language],
+  const languages = ['Java', 'Python', 'C++', 'C'];
+  const percentages = ['90%+', '80%-90%', '70%-80%', '60%-70%', '50%-60%'];
+
+  const handleLanguageSelect = (language) => {
+    setSelectedLanguages((prevSelected) => {
+      if (prevSelected.includes(language)) {
+        return prevSelected.filter((lang) => lang !== language);
+      } else if (prevSelected.length < 4) {
+        return [...prevSelected, language];
+      } else {
+        alert('You can select a maximum of 4 languages.');
+        return prevSelected;
+      }
+    });
+  };
+
+  const handleCutoffChange = (language, percentage) => {
+    setSelectedCutoffs((prevState) => ({
+      ...prevState,
+      [language]: percentage,
     }));
   };
-  const handleNextClick = () => {
-    const selected = Object.keys(selectedLanguages).filter(
-      (language) => selectedLanguages[language]
-    );
-    console.log("Selected languages:", selected);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
+    setIsSettingsSet(false);
   };
+
+  const handleEnter = () => {
+    if (!form.date || !form.time || isNaN(form.duration) || form.duration <= 0) {
+      alert('Please enter valid date, time, and duration.');
+      return;
+    }
+    setIsSettingsSet(true);
+  };
+
+  const handleProceed = async () => {
+    if (!selectedLanguages.every((language) => selectedCutoffs[language])) {
+      alert('Please select a cutoff for each language before proceeding.');
+      return;
+    }
+    if (!isSettingsSet) {
+      alert('Please set the date, time, and duration before proceeding.');
+      return;
+    }
+
+    try {
+      const interviewData = {
+        selectedLanguages,
+        selectedCutoffs,
+        interviewDetails: form,
+      };
+
+      let response = await axios.post('http://localhost:5000/langselect', interviewData);
+      let res = response.data;
+      alert(res);
+    } catch (err) {
+      console.log(err);
+    }
+
+    navigate('/company/submit');
+  };
+
   return (
     <>
       <Header />
-      <div className="div">
-        <div className="div-10">
-          <div className="div-11">
-            <div className="div-12">
-              Select programming Languages for the Interview
-            </div>
-            <div className="div-13">
-              {Object.keys(selectedLanguages).map((language) => (
-                <div className="div-14" key={language}>
-                  <input
-                    type="checkbox"
-                    checked={selectedLanguages[language]}
-                    onChange={() => handleCheckboxChange(language)}
-                  />
-                  <div className="div-15">{language}</div>
-                </div>
-              ))}
-            </div>
-            <Link to="/company/cutoff">
-              <button onClick={handleNextClick} className="div-25">Next</button>
-            </Link>
+      <div className="container">
+        {/* Language Selection */}
+        <div className="content">
+          <div className="title">Select the Programming Languages for the Interview (Max 4)</div>
+          <div className="language-list">
+            {languages.map((language, index) => (
+              <label className="custom-checkbox language-item" key={index}>
+                <input
+                  name="dummy"
+                  type="checkbox"
+                  checked={selectedLanguages.includes(language)}
+                  onChange={() => handleLanguageSelect(language)}
+                  aria-label={language}
+                />
+                <span className="checkmark"></span>
+                <div className="language-name">{language}</div>
+              </label>
+            ))}
           </div>
         </div>
+
+        {/* Cutoff Selection */}
+        <div className="content">
+          <h2 className="center-aligned">Select the Minimum Cut Off Percentage for Every Programming Language</h2>
+          <br />
+          <table className="cutoff-table">
+            <thead>
+              <tr>
+                {selectedLanguages.map((language, index) => (
+                  <th key={index}>{language}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                {selectedLanguages.map((language, colIndex) => (
+                  <td key={colIndex}>
+                    <div className="checkbox-container">
+                      {percentages.map((percentage, rowIndex) => (
+                        <label className="custom-checkbox" key={rowIndex}>
+                          <input
+                            type="radio"
+                            name={`cutoff-${language}`}
+                            value={percentage}
+                            checked={selectedCutoffs[language] === percentage}
+                            onChange={() => handleCutoffChange(language, percentage)}
+                          />
+                          <span className="checkmark"></span>
+                          {percentage}
+                        </label>
+                      ))}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Interview Details */}
+        <div className="content">
+          <h2 className="center-aligned">Set the Interview Details</h2>
+          <div className="input-container">
+            <div className="input-field-container">
+              <label className="input-label">Date</label>
+              <input
+                type="text"
+                name="date"
+                placeholder="DD-MM-YYYY"
+                value={form.date}
+                onChange={handleInputChange}
+                className={`input-field ${form.date ? 'has-value' : ''}`}
+              />
+            </div>
+            <div className="input-field-container">
+              <label className="input-label">Time</label>
+              <div className="time-input">
+                <input
+                  type="text"
+                  name="time"
+                  placeholder="HH:MM"
+                  value={form.time}
+                  onChange={handleInputChange}
+                  className={`input-field ${form.time ? 'has-value' : ''}`}
+                />
+                <select
+                  name="period"
+                  value={form.period}
+                  onChange={handleInputChange}
+                  className="input-field period-select"
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+            <div className="input-field-container">
+              <label className="input-label">Duration</label>
+              <input
+                type="number"
+                name="duration"
+                placeholder="e.g. 30 mins"
+                value={form.duration}
+                onChange={handleInputChange}
+                className={`input-field ${form.duration ? 'has-value' : ''}`}
+              />
+            </div>
+            <button onClick={handleEnter} className="enter-button">Enter</button>
+          </div>
+          {isSettingsSet && (
+            <div className="settings-confirmation">
+              <p className="settings-message">Date: {form.date}</p>
+              <p className="settings-message">Time: {form.time} {form.period}</p>
+              <p className="settings-message">Duration: {form.duration} minutes</p>
+            </div>
+          )}
+        </div>
+
+        {/* Proceed Button */}
+        <div className="button-container">
+          <button onClick={handleProceed} className="proceed-button">Proceed</button>
+        </div>
       </div>
+
+      <style jsx global>{`
+        body {
+          background-color: #f7f5fb;
+        }
+      `}</style>
       <style jsx>{`
-        .div {
-          background-color: #fff;
+        .container {
           display: flex;
           flex-direction: column;
+          align-items: center;
           padding: 42px 61px 71px;
         }
         @media (max-width: 991px) {
-          .div {
+          .container {
             padding: 0 20px;
           }
         }
-        .div-2 {
-          display: flex;
-          width: 100%;
-          gap: 20px;
-          white-space: nowrap;
-          justify-content: space-between;
-        }
-        @media (max-width: 991px) {
-          .div-2 {
-            max-width: 100%;
-            flex-wrap: wrap;
-            padding-right: 20px;
-            white-space: initial;
-          }
-        }
-        .img {
-          aspect-ratio: 4.17;
-          object-fit: auto;
-          object-position: center;
-          width: 200px;
-          max-width: 100%;
-        }
-        .div-3 {
-          display: flex;
-          align-items: center;
-          gap: 13px;
-          font-size: 20px;
-          color: var(--Wireframe, #313131);
-          font-weight: 400;
-          margin: auto 0;
-        }
-        @media (max-width: 991px) {
-          .div-3 {
-            white-space: initial;
-          }
-        }
-        .div-4 {
-          font-family: Poppins, sans-serif;
-          border-radius: 4px;
-          background-color: #f8444f;
-          align-self: stretch;
-          color: #fff;
-          justify-content: center;
-          padding: 8px 12px;
-        }
-        @media (max-width: 991px) {
-          .div-4 {
-            white-space: initial;
-          }
-        }
-        .div-5 {
-          font-family: Poppins, sans-serif;
-          align-self: stretch;
-          margin: auto 0;
-        }
-        .div-6 {
-          font-family: Poppins, sans-serif;
-          align-self: stretch;
-          margin: auto 0;
-        }
-        .div-7 {
-          color: #000;
-          font-family: Poppins, sans-serif;
-          align-self: stretch;
-          flex-grow: 1;
-          flex-basis: auto;
-          margin: auto 0;
-        }
-        .div-8 {
-          align-self: start;
-          display: flex;
-          margin-top: 7px;
-          flex-direction: column;
-          font-size: 25px;
-          color: #000;
-          font-weight: 900;
-          text-align: center;
-          justify-content: center;
-        }
-        @media (max-width: 991px) {
-          .div-8 {
-            white-space: initial;
-          }
-        }
-        .div-9 {
-          font-family: Poppins, sans-serif;
-          border-radius: 31px;
-          background-color: #ffc46e;
-          align-items: center;
-          width: 40px;
-          justify-content: center;
-          height: 40px;
-          padding: 0 11px;
-        }
-        @media (max-width: 991px) {
-          .div-9 {
-            white-space: initial;
-          }
-        }
-        .div-10 {
+        .content {
           background-color: #fff;
           display: flex;
-          margin-top: 105px;
           flex-direction: column;
           align-items: center;
           color: #000;
-          line-height: 126%;
-          padding: 7px 60px 0;
-        }
-        @media (max-width: 991px) {
-          .div-10 {
-            max-width: 100%;
-            padding-left: 20px;
-            margin-top: 40px;
-          }
-        }
-        .div-11 {
-          display: flex;
-          width: 100%;
-          max-width: 1114px;
-          flex-direction: column;
-          align-items: start;
-        }
-        @media (max-width: 991px) {
-          .div-11 {
-            max-width: 100%;
-          }
-        }
-        .div-12 {
-          text-align: center;
-          margin-left: 54px;
-          font: 700 31px Montserrat, -apple-system, Roboto, Helvetica, sans-serif;
-        }
-        @media (max-width: 991px) {
-          .div-12 {
-            max-width: 100%;
-          }
-        }
-        .div-13 {
-          display: flex;
-          margin-top: 89px;
-          width: 159px;
-          max-width: 100%;
-          flex-direction: column;
-          font-size: 30px;
-          font-weight: 400;
-          white-space: nowrap;
-        }
-        @media (max-width: 991px) {
-          .div-13 {
-            margin-top: 40px;
-            white-space: initial;
-          }
-        }
-        .div-14 {
-          display: flex;
-          gap: 20px;
-          padding: 8px 0;
-        }
-        @media (max-width: 991px) {
-          .div-14 {
-            white-space: initial;
-          }
-        }
-        .img-2 {
-          aspect-ratio: 1;
-          object-fit: auto;
-          object-position: center;
-          width: 30px;
-        }
-        .div-15 {
-          font-family: Poppins, sans-serif;
-          flex-grow: 1;
-          flex-basis: auto;
-          margin: auto 0;
-        }
-        .div-16 {
-          display: flex;
-          margin-top: 33px;
-          gap: 20px;
-          justify-content: space-between;
-        }
-        @media (max-width: 991px) {
-          .div-16 {
-            margin-right: 9px;
-            white-space: initial;
-          }
-        }
-        .div-17 {
-          border-radius: 6px;
-          border-color: rgba(0, 0, 0, 1);
-          border-style: solid;
-          border-width: 2px;
-          align-self: start;
-          width: 30px;
-          height: 30px;
-        }
-        .div-18 {
-          font-family: Poppins, sans-serif;
-        }
-        .div-19 {
-          justify-content: center;
-          display: flex;
-          margin-top: 38px;
-          gap: 20px;
-        }
-        @media (max-width: 991px) {
-          .div-19 {
-            margin-right: 7px;
-            white-space: initial;
-          }
-        }
-        .div-20 {
-          border-radius: 6px;
-          border-color: rgba(0, 0, 0, 1);
-          border-style: solid;
-          border-width: 2px;
-          width: 30px;
-          height: 30px;
-        }
-        .div-21 {
-          font-family: Poppins, sans-serif;
-          flex-grow: 1;
-          flex-basis: auto;
-          margin: auto 0;
-        }
-        .div-22 {
-          display: flex;
-          margin-top: 32px;
-          gap: 20px;
-          padding: 8px 0;
-        }
-        @media (max-width: 991px) {
-          .div-22 {
-            white-space: initial;
-          }
-        }
-        .div-23 {
-          border-radius: 6px;
-          border-color: rgba(0, 0, 0, 1);
-          border-style: solid;
-          border-width: 2px;
-          width: 30px;
-          height: 30px;
-        }
-        .div-24 {
-          font-family: Poppins, sans-serif;
-          flex-grow: 1;
-          flex-basis: auto;
-          margin: auto 0;
-        }
-        .div-25 {
-          display: flex;
-          margin-top: 64px;
-          flex-direction: column;
-          align-items: center;
-          color: #000;
-          font-size: 21px;
-          font-weight: 700;
-          white-space: nowrap;
-          padding: 10px 60px;
+          line-height: 1.26;
+          padding: 20px 40px;
           border-radius: 8px;
-          background-color:#f8444f;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          max-width: 800px;
+          width: 100%;
+          margin-bottom: 40px;
         }
         @media (max-width: 991px) {
-          .div-25 {
-            max-width: 100%;
+          .content {
+            padding: 20px;
             margin-top: 40px;
           }
+        }
+        .title, .center-aligned {
+          text-align: center;
+          font-size: 28px;
+          font-weight: 700;
+          color: #3d52a0;
+          margin-bottom: 40px;
+        }
+        .language-list {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          width: 100%;
+          max-width: 400px;
+        }
+        .language-item, .custom-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 0;
+          cursor: pointer;
+          user-select: none;
+          font-size: 16px;
+          color: #333;
+          transition: color 0.3s;
+        }
+        .language-name, .settings-message {
+          font-size: 18px;
+          color: #3d52a0;
+          font-weight: 500;
+        }
+        .proceed-button-container {
+          margin-top: 40px;
+          display: flex;
+          justify-content: center;
+        }
+        .proceed-button, .enter-button {
+          padding: 10px 20px;
+          font-size: 18px;
+          font-weight: 500;
+          color: #fff;
+          background-color: #3d52a0;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background-color 0.3s;
+        }
+        .proceed-button:hover, .enter-button:hover {
+          background-color: #1e317a;
+        }
+        .checkbox-container {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .cutoff-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .cutoff-table th, .cutoff-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: center;
+        }
+        .cutoff-table th {
+          background-color: #f2f2f2;
+          color: #333;
+        }
+        .input-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+        }
+        .input-field-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          max-width: 400px;
+          margin-bottom: 20px;
+        }
+        .input-field {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          font-size: 16px;
+          color: #333;
+          transition: border-color 0.3s;
+        }
+        .input-field:focus, .input-field.has-value {
+          border-color: #3d52a0;
+        }
+        .input-label {
+          margin-bottom: 5px;
+          font-size: 16px;
+          font-weight: 500;
+          color: #333;
+        }
+        .time-input {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .period-select {
+          width: 60px;
+        }
+        .settings-confirmation {
+          margin-top: 20px;
         }
       `}</style>
     </>
   );
-}
+};
+
+export default CombinedPage;

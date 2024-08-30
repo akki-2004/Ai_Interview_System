@@ -1,214 +1,145 @@
-import * as React from "react";
-import Header from "../Layout/Header";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import Header from '../Layout/Header';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 
-export default function Languages() {
+const Languages = () => {
+  const [latestInterview, setLatestInterview] = useState(null);
+
+  useEffect(() => {
+    const fetchLatestInterview = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/interview/latest');
+        setLatestInterview(response.data);
+      } catch (error) {
+        console.error('Error fetching latest interview:', error);
+      }
+    };
+
+    fetchLatestInterview();
+  }, []);
+
   return (
     <>
-    <Header/>
-      <div className="div">
-        <div className="div-2">
-         
-          <div className="div-3">
-            <div className="div-4">Ready for the Interview?</div>
-            <div className="div-5">
-              <div className="div-6">
-                <div className="div-7" />
-                <div className="div-8">Java</div>
+      <Header />
+      <div className="languages-container">
+        <div className="content">
+          <h2 className="title">Ready for the Interview?</h2>
+          <div className="languages-list">
+            {latestInterview && latestInterview.selectedLanguages.map((language, index) => (
+              <div className="language-item" key={index}>
+                <div className="bullet-point" />
+                <div className="language-text">{language}</div>
               </div>
-              <div className="div-9">
-                <div className="div-10" />
-                <div className="div-11">Python</div>
-              </div>
-              <div className="div-12">
-                <div className="div-13" />
-                <div className="div-14">C++</div>
-              </div>
-              <div className="div-15">
-                <div className="div-16" />
-                <div className="div-17">C</div>
-              </div>
-            </div>
-            <Link to="/interviewe/start"><button className="div-18">Start</button></Link>
+            ))}
           </div>
         </div>
+        <Link to="/interviewe/start">
+          <button className="proceed-button">Start</button>
+        </Link>
       </div>
+
       <style jsx>{`
-        .div {
+        .languages-container {
+          background-color: #f7f5fb;
+          display: flex;
+          flex-direction: column;
           align-items: center;
+          padding: 42px 20px 71px;
+          min-height: 100vh;
+        }
+
+        .content {
+          display: flex;
+          flex-direction: column;
+          max-width: 800px;
+          width: 100%;
           background-color: #fff;
-          display: flex;
-          color: #000;
-          justify-content: center;
-          padding: 65px 60px;
+          padding: 40px;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        @media (max-width: 991px) {
-          .div {
-            padding: 0 20px;
-          }
+
+        .title {
+          color: #3d52a0;
+          font-size: 32px;
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 40px;
         }
-        .div-2 {
+
+        .languages-list {
           display: flex;
-          width: 100%;
-          max-width: 1246px;
           flex-direction: column;
+          align-items: center;
         }
-        @media (max-width: 991px) {
-          .div-2 {
-            max-width: 100%;
-          }
+
+        .language-item {
+          display: flex;
+          align-items: center;
+          margin-bottom: 24px;
         }
-        .img {
-          aspect-ratio: 1;
-          object-fit: auto;
-          object-position: center;
-          width: 40px;
+
+        .bullet-point {
+          width: 12px;
+          height: 12px;
+          background-color: #3d52a0;
+          border-radius: 50%;
+          margin-right: 16px;
+          box-shadow: 0 0 5px rgba(61, 82, 160, 0.5);
         }
-        .div-3 {
+
+        .language-text {
+          font-size: 18px;
+          line-height: 1.5;
+          color: #333;
+        }
+
+        .proceed-button {
           align-self: center;
-          display: flex;
-          margin-top: 82px;
-          width: 100%;
-          max-width: 1125px;
-          flex-direction: column;
-        }
-        @media (max-width: 991px) {
-          .div-3 {
-            max-width: 100%;
-            margin-top: 40px;
-          }
-        }
-        .div-4 {
-          font: 900 40px Inter, sans-serif;
-        }
-        @media (max-width: 991px) {
-          .div-4 {
-            max-width: 100%;
-          }
-        }
-        .div-5 {
-          justify-content: center;
-          display: flex;
-          margin-top: 85px;
-          width: 119px;
-          max-width: 100%;
-          flex-direction: column;
-          font-size: 25px;
-          font-weight: 400;
-          white-space: nowrap;
-        }
-        @media (max-width: 991px) {
-          .div-5 {
-            margin-top: 40px;
-            white-space: initial;
-          }
-        }
-        .div-6 {
-          display: flex;
-          gap: 20px;
-          justify-content: space-between;
-        }
-        @media (max-width: 991px) {
-          .div-6 {
-            white-space: initial;
-          }
-        }
-        .div-7 {
-          background-color: #000;
-          border-radius: 50%;
-          width: 10px;
-          height: 10px;
-          margin: auto 0;
-        }
-        .div-8 {
-          font-family: Inter, sans-serif;
-        }
-        .div-9 {
-          display: flex;
-          margin-top: 47px;
-          gap: 20px;
-          justify-content: space-between;
-        }
-        @media (max-width: 991px) {
-          .div-9 {
-            margin-top: 40px;
-            white-space: initial;
-          }
-        }
-        .div-10 {
-          background-color: #000;
-          border-radius: 50%;
-          align-self: start;
-          width: 10px;
-          height: 10px;
-        }
-        .div-11 {
-          font-family: Inter, sans-serif;
-        }
-        .div-12 {
-          display: flex;
-          margin-top: 42px;
-          gap: 20px;
-          justify-content: space-between;
-        }
-        @media (max-width: 991px) {
-          .div-12 {
-            margin-top: 40px;
-            white-space: initial;
-          }
-        }
-        .div-13 {
-          background-color: #000;
-          border-radius: 50%;
-          width: 10px;
-          height: 10px;
-          margin: auto 0;
-        }
-        .div-14 {
-          font-family: Inter, sans-serif;
-        }
-        .div-15 {
-          display: flex;
-          margin-top: 47px;
-          gap: 20px;
-          justify-content: space-between;
-        }
-        @media (max-width: 991px) {
-          .div-15 {
-            margin-top: 40px;
-            white-space: initial;
-          }
-        }
-        .div-16 {
-          background-color: #000;
-          border-radius: 50%;
-          width: 10px;
-          height: 10px;
-          margin: auto 0;
-        }
-        .div-17 {
-          font-family: Inter, sans-serif;
-        }
-        .div-18 {
-          justify-content: center;
-          border-radius: 6px;
-          background-color: #f8444f;
-          align-self: end;
-          margin-top: 183px;
+          margin-top: 20px;
+          background-color: #3d52a0;
           color: #fff;
-          white-space: nowrap;
           padding: 14px 30px;
-          font: 600 16px/126% Montserrat, -apple-system, Roboto, Helvetica,
-            sans-serif;
+          font-size: 16px;
+          font-weight: 600;
+          border: none;
+          border-radius: 50px;
+          cursor: pointer;
+          box-shadow: 0 4px 6px rgba(61, 82, 160, 0.3);
+          transition: background-color 0.3s ease;
         }
+
+        .proceed-button:hover {
+          background-color: #2c3e75;
+        }
+
         @media (max-width: 991px) {
-          .div-18 {
-            margin-top: 40px;
-            white-space: initial;
-            padding: 0 20px;
+          .content {
+            padding: 20px;
+          }
+
+          .title {
+            font-size: 24px;
+            margin-bottom: 20px;
+          }
+
+          .language-item {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .bullet-point {
+            margin-bottom: 8px;
+          }
+
+          .proceed-button {
+            margin-top: 20px;
           }
         }
       `}</style>
     </>
   );
-}
+};
+
+export default Languages;

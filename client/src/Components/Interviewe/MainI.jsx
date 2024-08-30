@@ -21,7 +21,10 @@ export default function Dashboard() {
   //     navigate('/');
   //   }
   // }, [navigate]);
-
+  const jlaehnfi={
+    backgroundColor:"#3d52a0",
+    color:"white"
+  }
   return (
     <div>
       {/* <NavigationBar /> */}
@@ -38,7 +41,7 @@ export default function Dashboard() {
              <br />
              the Interview.
            </h1>
-           <Link to="/interviewe/instructions"><Button variant="dark" className="mt-4 px-5 py-2 rounded-pill">Start</Button></Link>
+           <Link to="/interviewe/instructions"><button style={jlaehnfi} className="afs mt-4 px-5 py-2 rounded-pill">Start</button></Link>
          </Col>
          <Col md={6}>
            <Image
@@ -51,5 +54,6 @@ export default function Dashboard() {
      </Container>
    </Container>
     </div>
+   
   );
 }
