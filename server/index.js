@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const accountSid = 'ACbbe3858df109505ac944b9458fe5db56';
+const accountSid =process.env.TWILIO_ACCOUNT_SID;
 const authToken = 'b38b9c0de79ac54c69325147d054b850';
 const client = twilio(accountSid, authToken);
 
